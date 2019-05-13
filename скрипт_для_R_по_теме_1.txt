@@ -2,7 +2,7 @@ install.packages("MASS", dependencies=T)
 
 library(MASS)
 
-setwd("C:\\Users\\Yurij\\Desktop\\ИГУ")
+setwd("C:\\My_data")
 
 data<-read.table("distribution.txt",sep="\t",header=T, stringsAsFactors=F)
 

@@ -1,0 +1,145 @@
+install.packages("MASS", dependencies=T)
+
+library(MASS)
+
+setwd("C:\\Users\\Yurij\\Desktop\\ИГУ")
+
+data<-read.table("distribution.txt",sep="\t",header=T, stringsAsFactors=F)
+
+data
+
+#обрашение к по номеру строки
+
+data[3,]
+
+#обрашение по номеру столбца
+
+data[,2]
+
+#обращение к элементу по номерам строки и слобца
+
+data[1,6]
+
+#обращение к столюцу по его названию
+data$distribution
+
+#обращение к столюцу по его названию
+data$value
+
+#выделение части таблицы, по условию
+data[data$distribution=="norm",]
+
+#оценка параметров распределения
+
+#нормальное распределение
+val<-data[data$distribution=="norm",]$value
+
+mean(val)
+
+sd(val)
+
+hist(val)
+
+fit<-fitdistr(val, densfun="normal")
+
+fit
+
+#логнормальной распределение
+val<-data[data$distribution=="lognorm",]$value
+
+mean(val)
+
+sd(val)
+
+hist(val)
+
+fit<-fitdistr(val, densfun="lognormal")
+
+fit
+
+unname(fit$estimate[1])
+
+unname(fit$estimate[2])
+
+m_log<-exp(unname(fit$estimate[1]))*sqrt(exp(unname(fit$estimate[2])^2))
+m_log
+sd_log<-sqrt(exp(2*unname(fit$estimate[1]))*(exp(unname(fit$estimate[2])^2)-1)*sqrt(exp(unname(fit$estimate[2])^2)))
+sd_log
+
+#експонециальной распределение
+
+val<-data[data$distribution=="exp",]$value
+
+mean(val)
+
+sd(val)
+
+hist(val)
+
+fit<-fitdistr(val, densfun="exponential")
+
+fit
+
+unname(fit$estimate[1])
+
+m_exp<-1/unname(fit$estimate[1])
+m_exp
+
+#распределение Пуассона
+val<-data[data$distribution=="pois",]$value
+
+mean(val)
+
+sd(val)
+
+hist(val)
+
+fit<-fitdistr(val, densfun="Poisson")
+
+fit
+
+unname(fit$estimate[1])
+
+sd_pois<-sqrt(unname(fit$estimate[1]))
+sd_pois
+
+#Выбор модели рапределения
+
+val<-data[data$distribution=="lognorm",]$value
+
+fit_1<-fitdistr(val, densfun="normal")
+fit_2<-fitdistr(val, densfun="lognormal")
+fit_3<-fitdistr(val, densfun="exponential")
+
+#расчет Байесовского информационного критения
+BIC(fit_3)
+
+#расчет Байесовского информационного критения для всех моделей
+BIC_value<-c(BIC(fit_1), BIC(fit_2), BIC(fit_3))
+
+#формирование вектора с названием моделей
+distribution<-c("normal", "lognormal", "exponential")
+
+#обьедение результат в итоговую таблицу
+rez<-data.frame(BIC_value=BIC_value, distribution=distribution)
+
+#сортировка таблицы по возврастанию значения Байесовского информационного критения
+rez<-rez[order(rez$BIC_value, decreasing=F),]
+
+rez
+
+
+#расчет аблолютных значений доверительного итервала для средненго значения логнормального распределения
+error_min<-unname(fit_2$estimate[1])-unname(fit_2$sd[1])
+error_max<-unname(fit_2$estimate[1])+unname(fit_2$sd[1])
+
+error_min
+error_max
+
+m<-exp(unname(fit_2$estimate[1]))*sqrt(exp(unname(fit_2$estimate[2])^2))
+value_error_min<-exp(error_min)*sqrt(exp(unname(fit_2$estimate[2])^2))
+value_error_max<-exp(error_max)*sqrt(exp(unname(fit_2$estimate[2])^2))
+
+value_error_min
+m
+value_error_max

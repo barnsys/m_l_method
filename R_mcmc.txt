@@ -1,0 +1,96 @@
+# функция для расчета доверительного интервала по выборке
+confidence_interval <- function(vector, interval) 
+ {
+  vector<-sort(vector)
+  lower<-vector[length(vector)*(1-interval)/2]
+  upper<-vector[length(vector)*interval+(1-interval/2)]
+  result <- c("lower"=lower , "upper"=upper)
+  return(result)
+ }
+
+# функция для расчета показателя правдоподобия
+l_log<-function(theta, y)
+ {
+  l<-dnorm(y, mean=theta[1], sd=theta[2])
+  l<-sum(log(l))
+  return(l)
+ }
+
+
+# генерация случайной выборки
+y<-rnorm(40, 30, 5)
+
+l_log(theta=c(20,2), y=y)
+
+
+# построение алгоритма монтекарло моделирования
+
+# длинна Марковской цепи в шагах
+len_chain<-1000000
+
+# задание начальных условий
+ln_l<-rep(0, len_chain)
+my<-rep(0, len_chain)
+sdy<-rep(0, len_chain)
+
+my[1]<-1
+sdy[1]<-1
+ln_l[1]<-l_log(theta=c(my[1],sdy[1]), y=y)
+
+# генерация Марковской цепи испытаний
+pb<-txtProgressBar(min=2, max=len_chain, style = 3)
+i<-2
+while(i<=len_chain)
+ {
+  my[i]<-my[i-1]+rnorm(1,0,0.1)
+  sdy[i]<-sdy[i-1]+rnorm(1,0,0.1)
+  ln_l[i]<-l_log(theta=c(my[i],sdy[i]), y=y)
+  accept <- if (ln_l[i]>=ln_l[i-1]) TRUE
+             else as.logical(rbinom(1, size=1, prob=exp(ln_l[i]-ln_l[i-1])))
+  if(accept)
+   {
+    i<-i+1
+    setTxtProgressBar(pb, i)
+   }
+ }
+close(pb)
+
+# создание подвыборки Марковской цепи
+n<-c(1:10000)
+n<-n*len_chain/10000
+
+my<-my[n]
+sdy<-sdy[n]
+
+# визуализация результата в виде графика
+par(mfrow=c(3,1))
+plot(c(1:length(ln_l)), ln_l, typ="n")
+lines(c(1:length(ln_l)), ln_l)
+plot(c(1:length(my)), my, typ="n")
+lines(c(1:length(my)), my)
+plot(c(1:length(sdy)), sdy, typ="n")
+lines(c(1:length(sdy)), sdy)
+
+# визуализация результата в виде гистограммы
+par(mfrow=c(3,1))
+hist(ln_l, 40)
+hist(my, 40)
+hist(sdy, 40)
+
+# отжиг
+my<-my[1000:length(my)]
+sdy<-sdy[1000:length(sdy)]
+
+# расчета доверительного интервала по результатам генераций
+mean(my)
+confidence_interval(my, 0.95)
+confidence_interval(sdy, 0.95)
+
+# расчета доверительного интервала по распределению Стьюдента
+
+error<-qnorm(0.975)*sd(y)/sqrt(length(y))
+
+mean(y)
+
+mean(y)-error
+mean(y)+error

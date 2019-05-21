@@ -1,0 +1,55 @@
+
+library(poilog)
+library(MCMCpack)
+
+
+
+# создание вектора с расстояниями от корня до вершины древа (эта часть скрипта переходит из предыдущих расчетов)
+
+md<-1000
+sdd<-150
+
+location <- log(md^2 / sqrt(sdd^2 + md^2))
+shape <- sqrt(log(1 + (sdd^2 / md^2)))
+
+d<-rpoilog(100, mu=location, sig=shape)
+
+hist(d)
+
+
+# задание функции для вычисления показателя правдоподобия для распределения логнормальное - Пуассон (параметр среднего значения для Пуассона распределен по логарифмически - нормальному распределению)
+
+l_log<-function(theta, y)
+ {
+  if(theta[2]<0)
+   return (-Inf)
+  l<-dpoilog(y, mu=theta[1], sig=theta[2])
+  l<-sum(log(l))
+  return(l)
+ }
+
+
+# MCMC для вычисление я точных значений и доверительных интервалов для параметров location и shape распределения логнормальное - Пуассон
+
+#post.samp <- MCMCmetrop1R(l_log, theta.init=c(10, 10), y=d, thin=1, mcmc=35000, burnin=1000, tune=2, verbose=500, logfun=TRUE, seed=list(NA,1))
+
+# mcmc=35000 - количество генерация для Марковских цепей
+# burnin=1000 - параметр отжига
+
+# визуализация результата
+raftery.diag(post.samp)
+plot(post.samp)
+summary(post.samp)
+
+# получения точных значений параметров location и shape для распределения логнормальное - Пуассон из результатов MCMC
+mcmc_location<-unname(summary(post.samp)$statistics[1,1])
+mcmc_shape<-unname(summary(post.samp)$statistics[2,1])
+mcmc_location
+mcmc_shape
+
+# преобразования значений параметров mcmc_location и mcmc_shape в среднее значение и среднеквадратичное отклонение для распределения логнормальное - Пуассон
+mcmc_md<-exp(mcmc_location)*sqrt(exp(mcmc_shape^2))
+mcmc_sdd<-sqrt(exp(2*mcmc_location)*(exp(mcmc_shape^2)-1)*sqrt(exp(mcmc_shape^2)))
+mcmc_md
+mcmc_sdd
+
